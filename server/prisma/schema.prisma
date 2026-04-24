@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum LoanStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DISBURSED
+}
+
+enum KycStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  VERIFIED
+  FAILED
+}
+
+model User {
+  id             String    @id @default(uuid())
+  fullName       String
+  email          String    @unique
+  phone          String    @unique
+  password       String
+  age            Int?
+  address        String?
+  aadhaarNumber  String?
+  businessType   String?
+  monthlyIncome  Float?
+  role           Role      @default(USER)
+  kycStatus      KycStatus @default(NOT_STARTED)
+  documents      Json?     // { aadhaarFront, aadhaarBack, panCard, ... }
+
+  loans          LoanApplication[]
+  creditScores   CreditScore[]
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model LoanApplication {
+  id                  String     @id @default(uuid())
+  userId              String
+  user                User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  amount              Float
+  purpose             String
+  tenure              Int        // months
+  status              LoanStatus @default(PENDING)
+  creditScoreSnapshot Int?       // score at time of application
+  riskBand            String?
+  documents           Json?
+  adminNotes          String?
+
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  @@map("loan_applications")
+}
+
+model CreditScore {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  compositeScore   Int
+  repaymentScore   Int
+  incomeScore      Int
+  factors          Json     // [{ name, key, score, impact, imputed }]
+  dataCompleteness Float
+  imputedFields    Json     // ["field1", "field2"]
+  riskBand         String
+  improvements     Json     // ["tip1", "tip2"]
+
+  scoredAt         DateTime @default(now())
+
+  @@map("credit_scores")
+}

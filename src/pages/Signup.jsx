@@ -16,19 +16,37 @@ export default function Signup() {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [idDocument, setIdDocument] = useState(null)
+  const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const fileInputRef = useRef()
-  const { login } = useAuth()
+  const { signup } = useAuth()
   const navigate = useNavigate()
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    login({
-      id: '123',
-      name: formData.name,
-      email: formData.email,
-      role: 'user'
-    })
-    navigate('/dashboard')
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      await signup({
+        fullName: formData.name,
+        email: formData.email,
+        phone: formData.mobile,
+        address: formData.address,
+        password: formData.password,
+      })
+      navigate('/dashboard')
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.errors?.join(', ') || 'Signup failed'
+      setError(msg)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleFileUpload = (e) => {

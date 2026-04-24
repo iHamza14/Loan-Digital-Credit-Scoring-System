@@ -14,6 +14,8 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [isOtpLogin, setIsOtpLogin] = useState(false)
   const [otp, setOtp] = useState('')
+  const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
   const formRef = useRef()
@@ -25,56 +27,28 @@ export default function Login() {
     )
   }, [])
 
-// In handleSubmit function:
-const handleSubmit = (e) => {
-  e.preventDefault()
-  
-  // Mock admin detection
-  let userData = {
-    id: '123',
-    name: 'Regular User',
-    email: formData.identifier,
-    role: 'user'
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setIsSubmitting(true)
 
-  // Check if admin credentials
-  if (formData.identifier === 'admin' && formData.password === 'admin123') {
-    userData = {
-      id: 'admin-001',
-      name: 'Admin User',
-      email: 'admin@appname.com',
-      role: 'admin'
+    try {
+      const user = await login(formData.identifier, formData.password)
+      navigate(user.role === 'ADMIN' ? '/admin' : '/dashboard')
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Login failed. Please try again.'
+      setError(msg)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  login(userData)
-  navigate(userData.role === 'admin' ? '/admin' : '/dashboard')
-}
-
-// In handleOtpSubmit function:
-const handleOtpSubmit = (e) => {
-  e.preventDefault()
-  
-  let userData = {
-    id: '123',
-    name: 'Regular User',
-    email: 'user@example.com',
-    role: 'user'
+  const handleOtpSubmit = async (e) => {
+    e.preventDefault()
+    // OTP login would need a separate backend endpoint
+    // for now, show a message
+    setError('OTP login coming soon. Use password login for now.')
   }
-
- 
-  if (formData.identifier === '9999999999') {
-    userData = {
-      id: 'admin-001',
-      name: 'Admin User',
-      email: 'admin@LoanSewa.com',
-      role: 'admin'
-    }
-  }
-
-  login(userData)
-  navigate(userData.role === 'admin' ? '/admin' : '/dashboard')
-}
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -98,6 +72,12 @@ const handleOtpSubmit = (e) => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
         >
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
+              {error}
+            </div>
+          )}
+
           {/* Login Method Tabs */}
           <div className="flex border-b border-gray-200 mb-6">
             <button
@@ -228,9 +208,10 @@ const handleOtpSubmit = (e) => {
               <div>
                 <button
                   type="submit"
-                  className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  disabled={isSubmitting}
+                  className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Sign in
+                  {isSubmitting ? 'Signing in...' : 'Sign in'}
                 </button>
               </div>
             </form>
